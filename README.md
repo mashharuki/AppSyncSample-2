@@ -123,6 +123,7 @@ cdk deploy
 デプロイ完了後、サンプルデータをDynamoDBに投入します。
 
 ```bash
+export CDK_DEFAULT_REGION=ap-northeast-1 
 pnpm run push-data
 ```
 
@@ -144,6 +145,95 @@ query GetCar {
     firstcolor
     firstregistrationdate
     licenseplate
+  }
+}
+```
+
+取得結果
+
+```json
+{
+  "data": {
+    "getCar": {
+      "expirydateapk": "20231019",
+      "cylindervolume": null,
+      "catalogprice": null,
+      "defects": [
+        {
+          "defectdescription": "Anti-lock braking system warning device indicates defect",
+          "defectstartdate": "20180520",
+          "licenseplate": "BR794ZQ3"
+        },
+        {
+          "defectdescription": "Tail light does not work (properly)",
+          "defectstartdate": "20170401",
+          "licenseplate": "BR794ZQ3"
+        },
+        {
+          "defectdescription": "Excessive fluid leakage of other fluids",
+          "defectstartdate": "20120401",
+          "licenseplate": "BR794ZQ3"
+        },
+        {
+          "defectdescription": "Tire damaged",
+          "defectstartdate": "20170401",
+          "licenseplate": "BR794ZQ3"
+        },
+        {
+          "defectdescription": "Airbag/belt belt system warning device is defective",
+          "defectstartdate": "20100227",
+          "licenseplate": "BR794ZQ3"
+        },
+        {
+          "defectdescription": "Airbag/belt belt system warning device is defective",
+          "defectstartdate": "20100227",
+          "licenseplate": "BR794ZQ3"
+        },
+        {
+          "defectdescription": "Anti-lock braking system warning device indicates defect",
+          "defectstartdate": "20180520",
+          "licenseplate": "BR794ZQ3"
+        },
+        {
+          "defectdescription": "Anti-lock braking system warning device indicates defect",
+          "defectstartdate": "20180520",
+          "licenseplate": "BR794ZQ3"
+        },
+        {
+          "defectdescription": "Mechanical parts of the braking system show wear",
+          "defectstartdate": null,
+          "licenseplate": "BR794ZQ3"
+        },
+        {
+          "defectdescription": "Anti-lock braking system warning device indicates defect",
+          "defectstartdate": "20180520",
+          "licenseplate": "BR794ZQ3"
+        },
+        {
+          "defectdescription": "Airbag/belt belt system warning device is defective",
+          "defectstartdate": "20100227",
+          "licenseplate": "BR794ZQ3"
+        },
+        {
+          "defectdescription": "Battery incorrectly attached",
+          "defectstartdate": "20170401",
+          "licenseplate": "BR794ZQ3"
+        },
+        {
+          "defectdescription": "Airbag/belt belt system warning device is defective",
+          "defectstartdate": "20100227",
+          "licenseplate": "BR794ZQ3"
+        },
+        {
+          "defectdescription": "Door cannot be opened normally",
+          "defectstartdate": "20170401",
+          "licenseplate": "BR794ZQ3"
+        }
+      ],
+      "firstcolor": "GREEN",
+      "firstregistrationdate": "19980414",
+      "licenseplate": "BR794ZQ3"
+    }
   }
 }
 ```
