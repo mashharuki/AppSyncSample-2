@@ -1,8 +1,13 @@
 #!/usr/bin/env node
-import "source-map-support/register";
 import * as cdk from "aws-cdk-lib";
+import "source-map-support/register";
 import { CdkAppsyncDemoStack } from "../lib/cdk-appsync-demo-stack";
 
-const env = { region: "eu-central-1" };
+// CDKのデフォルトリージョンを環境変数から読み込む
+const env = {
+	account: process.env.CDK_DEFAULT_ACCOUNT,
+	region: process.env.CDK_DEFAULT_REGION,
+};
 const app = new cdk.App();
+// スタックのインスタンス化
 new CdkAppsyncDemoStack(app, "CdkAppsyncDemoStack", { env });

@@ -5,11 +5,11 @@ const client = new DynamoDBClient({ region: "eu-central-1" });
 const carsTableName = "cardata-cars";
 const defectsTableName = "cardata-defects";
 
-// Load cars data from JSON file
+// JSONファイルから車のデータを読み込む
 const carsData = require("../data/cars.json");
 const defectsData = require("../data/defects.json");
 
-// Function to convert car object to DynamoDB PutItemInput
+// 車オブジェクトをDynamoDBのPutItemInput形式に変換する関数
 const convertToPutItemInput = (table, prop) => {
 	return {
 		TableName: table,
@@ -17,21 +17,21 @@ const convertToPutItemInput = (table, prop) => {
 	};
 };
 
-// Function to execute PutItemCommand with a delay
+// 遅延を入れてPutItemCommandを実行する関数
 const executeWithDelay = async (command) => {
 	return new Promise((resolve) => {
 		setTimeout(async () => {
 			await client.send(command);
 			resolve();
-		}, 250); // Delay of 250ms second between each execution
+		}, 250); // 各実行の間に250ミリ秒の遅延を入れる
 	});
 };
 
-// Function to process cars data
+// 車データを処理する関数
 const processCarsData = async () => {
 	for (let i = 0; i < carsData.length; i++) {
 		console.log(
-			`[${i + 1}/${carsData.length + 1}] - Pushing car with license plate ${carsData[i].licenseplate.S} to DynamoDB.`,
+			`[${i + 1}/${carsData.length + 1}] - 車のデータをDynamoDBに送信中... ナンバープレート: ${carsData[i].licenseplate.S}`,
 		);
 		const input = convertToPutItemInput(carsTableName, carsData[i]);
 		const command = new PutItemCommand(input);
@@ -39,11 +39,11 @@ const processCarsData = async () => {
 	}
 };
 
-// Function to process cars data
+// 不具合データを処理する関数
 const processDefectsData = async () => {
 	for (let i = 0; i < defectsData.length; i++) {
 		console.log(
-			`[${i + 1}/${defectsData.length + 1}] - Pushing defect with license plate ${defectsData[i].licenseplate.S} to DynamoDB.`,
+			`[${i + 1}/${defectsData.length + 1}] - 不具合データをDynamoDBに送信中... ナンバープレート: ${defectsData[i].licenseplate.S}`,
 		);
 		const input = convertToPutItemInput(defectsTableName, defectsData[i]);
 		const command = new PutItemCommand(input);
@@ -51,19 +51,19 @@ const processDefectsData = async () => {
 	}
 };
 
-// Execute the process
+// 処理を実行する
 processCarsData()
 	.then(() =>
 		console.log(
-			"Car Data pushed to DynamoDB with a rate of 4 records per second.",
+			"車のデータがDynamoDBに送信されました（速度: 4レコード/秒）。",
 		),
 	)
-	.catch((err) => console.error("Error:", err));
+	.catch((err) => console.error("エラー:", err));
 
 processDefectsData()
 	.then(() =>
 		console.log(
-			"Defect Data pushed to DynamoDB with a rate of 4 records per second.",
+			"不具合データがDynamoDBに送信されました（速度: 4レコード/秒）。",
 		),
 	)
-	.catch((err) => console.error("Error:", err));
+	.catch((err) => console.error("エラー:", err));

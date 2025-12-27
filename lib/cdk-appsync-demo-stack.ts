@@ -13,11 +13,21 @@ import type { Construct } from "constructs";
 
 import path = require("node:path");
 
+/**
+ * AppSyncとDynamoDBを使用したスタック
+ */
 export class CdkAppsyncDemoStack extends cdk.Stack {
+	/**
+	 * コンストラクター
+	 * @param scope
+	 * @param id
+	 * @param props
+	 */
 	constructor(scope: Construct, id: string, props?: cdk.StackProps) {
 		super(scope, id, props);
 
-		// Create DynamoDB tables
+		// DynamoDBテーブルの作成
+		// 車の情報を格納するテーブル
 		const carsTable = new Table(this, "CarTable", {
 			partitionKey: { name: "licenseplate", type: AttributeType.STRING },
 			tableName: "cardata-cars",
@@ -27,6 +37,7 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 			writeCapacity: 4,
 		});
 
+		// 不具合情報を格納するテーブル
 		const defectsTable = new Table(this, "DefectsTable", {
 			partitionKey: { name: "id", type: AttributeType.STRING },
 			removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -36,6 +47,7 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 			writeCapacity: 4,
 		});
 
+		// ナンバープレートで不具合を検索するためのグローバルセカンダリインデックス (GSI) を追加
 		defectsTable.addGlobalSecondaryIndex({
 			indexName: "defect-by-licenseplate",
 			partitionKey: {
@@ -46,6 +58,7 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 			writeCapacity: 4,
 		});
 
+		// AppSync API (GraphQL API) の作成
 		const api = new GraphqlApi(this, "CarApi", {
 			name: "carAPI",
 			definition: Definition.fromFile(
@@ -59,7 +72,7 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 			xrayEnabled: true,
 		});
 
-		// Connect DynamoDB tables to the AppSync API as data sources
+		// DynamoDBテーブルをAppSync APIのデータソースとして接続
 		const carsDataSource = api.addDynamoDbDataSource(
 			"CarsDataSource",
 			carsTable,
@@ -69,6 +82,8 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 			defectsTable,
 		);
 
+		// AppSync関数 (リゾルバー) の定義
+		// 車情報を取得する関数
 		const carsResolver = new AppsyncFunction(this, "CarsFunction", {
 			name: "getCars",
 			api,
@@ -77,6 +92,7 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 			runtime: FunctionRuntime.JS_1_0_0,
 		});
 
+		// 不具合情報を取得する関数
 		const defectsResolver = new AppsyncFunction(this, "DefectsFunction", {
 			name: "getDefects",
 			api,
@@ -85,6 +101,8 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 			runtime: FunctionRuntime.JS_1_0_0,
 		});
 
+		// パイプラインリゾルバーの設定
+		// Query.getCar に対するリゾルバー
 		new Resolver(this, "PipelineResolverGetCars", {
 			api,
 			typeName: "Query",
@@ -94,6 +112,7 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 			pipelineConfig: [carsResolver],
 		});
 
+		// Car.defects に対するリゾルバー (ネストされたクエリ用)
 		new Resolver(this, "PipelineResolverGetDefects", {
 			api,
 			typeName: "Car",
@@ -101,6 +120,22 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 			runtime: FunctionRuntime.JS_1_0_0,
 			code: Code.fromAsset(path.join(__dirname, "../resolvers/pipeline.js")),
 			pipelineConfig: [defectsResolver],
+		});
+
+		// =================================================-
+		// CDKデプロイ時にAPIエンドポイントとテーブル名を出力
+		// =================================================-
+
+		new cdk.CfnOutput(this, "GraphQLAPIURL", {
+			value: api.graphqlUrl,
+		});
+
+		new cdk.CfnOutput(this, "CarsTableName", {
+			value: carsTable.tableName,
+		});
+
+		new cdk.CfnOutput(this, "DefectsTableName", {
+			value: defectsTable.tableName,
 		});
 	}
 }

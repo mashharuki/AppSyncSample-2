@@ -1,9 +1,9 @@
 import { util } from "@aws-appsync/utils";
 
 /**
- * Queries a DynamoDB table, limits the number of returned items, and paginates with the provided `nextToken`
- * @param {import('@aws-appsync/utils').Context<{id: string; limit?: number; nextToken?:string}>} ctx the context
- * @returns {import('@aws-appsync/utils').DynamoDBQueryRequest} the request
+ * DynamoDBテーブルをクエリし、返されるアイテム数を制限し、提供された `nextToken` でページネーションを行います
+ * @param {import('@aws-appsync/utils').Context<{id: string; limit?: number; nextToken?:string}>} ctx コンテキスト
+ * @returns {import('@aws-appsync/utils').DynamoDBQueryRequest} リクエスト
  * defect-by-licenseplate
  */
 export function request(ctx) {

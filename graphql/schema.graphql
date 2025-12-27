@@ -1,3 +1,4 @@
+# 車の情報を表す型
 type Car {
 	licenseplate: String!
 	brand: String!
@@ -10,9 +11,11 @@ type Car {
 	catalogprice: String
 	length: String
 	width: String
+	# 車に関連する不具合のリスト
 	defects: [Defect]
 }
 
+# 不具合情報を表す型
 type Defect {
 	licenseplate: String!
 	defectstartdate: String
@@ -20,6 +23,7 @@ type Defect {
 }
 
 type Query {
+	# ナンバープレートで車を検索するクエリ
 	getCar(licenseplate: String!): Car
 }
 

@@ -1,9 +1,9 @@
 import { util } from "@aws-appsync/utils";
 
 /**
- * Sends a request to get an item with id `ctx.args.id`
- * @param {import('@aws-appsync/utils').Context} ctx the context
- * @returns {import('@aws-appsync/utils').DynamoDBGetItemRequest} the request
+ * ID `ctx.args.id` を持つアイテムを取得するリクエストを送信します
+ * @param {import('@aws-appsync/utils').Context} ctx コンテキスト
+ * @returns {import('@aws-appsync/utils').DynamoDBGetItemRequest} リクエスト
  */
 export function request(ctx) {
 	return {
@@ -13,9 +13,9 @@ export function request(ctx) {
 }
 
 /**
- * Returns the fetched DynamoDB item
- * @param {import('@aws-appsync/utils').Context} ctx the context
- * @returns {*} the DynamoDB item
+ * 取得したDynamoDBアイテムを返します
+ * @param {import('@aws-appsync/utils').Context} ctx コンテキスト
+ * @returns {*} DynamoDBアイテム
  */
 export function response(ctx) {
 	return ctx.result;
