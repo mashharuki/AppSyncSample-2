@@ -56,9 +56,7 @@ const processDefectsData = async () => {
 // 処理を実行する
 processCarsData()
 	.then(() =>
-		console.log(
-			"車のデータがDynamoDBに送信されました（速度: 4レコード/秒）。",
-		),
+		console.log("車のデータがDynamoDBに送信されました（速度: 4レコード/秒）。"),
 	)
 	.catch((err) => console.error("エラー:", err));
 

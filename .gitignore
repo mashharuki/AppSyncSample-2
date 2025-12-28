@@ -1,5 +1,6 @@
-!*.js
-node_modules/
-cdk.out/
+node_modules
+cdk.out
+.DS_Store
+dist
+coverage
 .env
-build/
