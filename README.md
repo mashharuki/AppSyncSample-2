@@ -69,11 +69,22 @@ sequenceDiagram
 
 ## 技術スタック
 
+**バックエンド:**
 *   **Infrastructure as Code**: AWS CDK (TypeScript)
 *   **API**: AWS AppSync (GraphQL)
 *   **Database**: Amazon DynamoDB
 *   **Runtime**: Node.js (v18.x recommended)
-*   **Package Manager**: pnpm
+*   **認証**: API Key + IAM
+
+**フロントエンド:**
+*   **フレームワーク**: Next.js 16 (App Router)
+*   **UI**: React 19 + Tailwind CSS v4
+*   **GraphQLクライアント**: AWS Amplify
+*   **型生成**: GraphQL Code Generator
+*   **言語**: TypeScript
+
+**共通:**
+*   **Package Manager**: pnpm (モノレポ管理)
 *   **Linter / Formatter**: Biome
 *   **Testing**: Jest
 
@@ -122,11 +133,32 @@ export CDK_DEFAULT_REGION=ap-northeast-1
 pnpm run push-data
 ```
 
-### フロントエンド起動
+### フロントエンド設定と起動
+
+1. 環境変数を設定:
+
+```bash
+cd pkgs/frontend
+cp .env.local.example .env.local
+```
+
+2. `.env.local` ファイルを編集し、デプロイ時に出力された値を設定:
+   - `NEXT_PUBLIC_APPSYNC_ENDPOINT`: GraphQLAPIURL の値
+   - `NEXT_PUBLIC_APPSYNC_API_KEY`: GraphQLAPIKey の値
+
+3. GraphQL型定義を生成:
+
+```bash
+pnpm codegen
+```
+
+4. フロントエンド起動:
 
 ```bash
 pnpm frontend run dev
 ```
+
+ブラウザで [http://localhost:3000](http://localhost:3000) にアクセス
 
 ### 動作確認
 

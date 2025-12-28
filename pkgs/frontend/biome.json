@@ -30,8 +30,7 @@
   },
   "css": {
     "parser": {
-      "cssModules": true,
-      "tailwindDirectives": true
+      "cssModules": true
     }
   },
   "assist": {

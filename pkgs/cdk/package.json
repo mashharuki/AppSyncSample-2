@@ -9,9 +9,10 @@
 		"build": "tsc",
 		"watch": "tsc -w",
 		"cdk": "cdk",
-		"push-data": "node utils/index.js",
-		"lint": "biome check .",
-		"format": "biome check --write ."
+		"deploy": "cdk deploy",
+		"destroy": "cdk destroy",
+		"test": "jest",
+		"push-data": "node utils/index.js"
 	},
 	"devDependencies": {
 		"@types/jest": "^29.5.14",

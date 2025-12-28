@@ -66,8 +66,13 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 			),
 			authorizationConfig: {
 				defaultAuthorization: {
-					authorizationType: AuthorizationType.IAM,
+					authorizationType: AuthorizationType.API_KEY,
 				},
+				additionalAuthorizationModes: [
+					{
+						authorizationType: AuthorizationType.IAM,
+					},
+				],
 			},
 			xrayEnabled: true,
 		});
@@ -128,6 +133,10 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 
 		new cdk.CfnOutput(this, "GraphQLAPIURL", {
 			value: api.graphqlUrl,
+		});
+
+		new cdk.CfnOutput(this, "GraphQLAPIKey", {
+			value: api.apiKey || "",
 		});
 
 		new cdk.CfnOutput(this, "CarsTableName", {
