@@ -1,7 +1,7 @@
 const { DynamoDBClient, PutItemCommand } = require("@aws-sdk/client-dynamodb");
 
 const client = new DynamoDBClient({
-	region: process.env.CDK_DEFAULT_REGION || "eu-central-1",
+	region: process.env.CDK_DEFAULT_REGION,
 });
 
 const carsTableName = "cardata-cars";

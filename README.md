@@ -98,10 +98,8 @@ pnpm install
 
 ```bash
 # TypeScriptのビルド
-pnpm run build
-
-# リントとフォーマットチェック
-pnpm run lint
+pnpm frontend run build
+pnpm cdk run build
 
 # フォーマットの自動修正
 pnpm run format
@@ -109,13 +107,10 @@ pnpm run format
 
 ### デプロイ
 
-AWS環境へデプロイします。デフォルトでは `eu-central-1` リージョンが指定されていますが、環境変数で変更可能です。
+AWS環境へデプロイします。
 
 ```bash
-# 環境変数を使用する場合
-export CDK_DEFAULT_ACCOUNT=123456789012
-export CDK_DEFAULT_REGION=ap-northeast-1
-cdk deploy
+pnpm cdk run deploy '*'
 ```
 
 ### データ投入

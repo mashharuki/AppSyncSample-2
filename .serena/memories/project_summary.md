@@ -1,18 +1,24 @@
 # Project Summary
 
-This project is an AWS CDK demonstration of an AppSync API backed by DynamoDB tables.
-It showcases a one-to-many relationship between "cars" and "defects".
+This project is a monorepo using pnpm workspaces, consisting of an AWS CDK backend and a Next.js frontend.
+It demonstrates an AppSync API backed by DynamoDB tables with a frontend application.
+
+## Structure
+- **Root**: Monorepo root with shared configuration (Biome).
+- **pkgs/cdk**: AWS CDK infrastructure code.
+  - **AppSync API**: Named `carAPI`.
+  - **DynamoDB Tables**: `cardata-cars` (cars) and `cardata-defects` (defects).
+  - **Resolvers**: JavaScript resolvers for AppSync.
+- **pkgs/frontend**: Next.js web application.
 
 ## Key Features
-- **AppSync API**: Named `carAPI`.
-- **DynamoDB Tables**:
-  - `cardata-cars`: Stores car information (Partition Key: `licenseplate`).
-  - `cardata-defects`: Stores defect information (Partition Key: `id`).
-  - `defects-by-licenseplate` GSI on `cardata-defects` to query by `licenseplate`.
-- **Resolvers**: JavaScript resolvers (AppSync Functions) to fetch data and handle the nested query (cars -> defects).
-- **Data Source**: Public RDW data (Netherlands vehicle registration).
+- **Backend**:
+  - One-to-many relationship between "cars" and "defects".
+  - Public RDW data source.
+- **Frontend**:
+  - Modern React application consuming the AppSync API.
 
 ## Architecture
-The CDK stack (`lib/cdk-appsync-demo-stack.ts`) sets up the AppSync API, DynamoDB tables, and resolvers.
-The schema is defined in `graphql/schema.graphql`.
-Data population is handled by `utils/index.js`.
+- **Infrastructure**: Defined in `pkgs/cdk/lib/cdk-appsync-demo-stack.ts`.
+- **Schema**: GraphQL schema in `pkgs/cdk/graphql/schema.graphql`.
+- **Web App**: Located in `pkgs/frontend`.
