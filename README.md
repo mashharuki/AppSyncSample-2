@@ -122,6 +122,12 @@ export CDK_DEFAULT_REGION=ap-northeast-1
 pnpm run push-data
 ```
 
+### フロントエンド起動
+
+```bash
+pnpm frontend run dev
+```
+
 ### 動作確認
 
 AWSマネジメントコンソールのAppSyncクエリエディタ、または任意のGraphQLクライアントから以下のクエリを実行します。
