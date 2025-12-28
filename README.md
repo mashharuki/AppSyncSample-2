@@ -1,16 +1,39 @@
-# AWS CDK AppSync DynamoDB Table Joining Demo
+# AWS AppSync + DynamoDB + Next.js フルスタックデモ
 
-このプロジェクトは、AWS CDKを使用して、DynamoDBテーブルをバックエンドに持つAWS AppSync APIを構築するデモです。
-特に、車（Cars）と不具合（Defects）という2つのテーブル間で1対多のリレーションシップを確立し、ネストされたクエリを実現する方法を示しています。
+このプロジェクトは、**モノレポ構成**で構築されたフルスタックアプリケーションです。AWS CDKを使用してインフラストラクチャをコード化し、DynamoDBテーブルをバックエンドに持つAWS AppSync GraphQL APIを構築し、Next.jsフロントエンドから利用する完全なシステムを示しています。
+
+特に、車（Cars）と不具合（Defects）という2つのテーブル間で**1対多のリレーションシップ**を確立し、**ネストされたGraphQLクエリ**を実現する方法を示しています。
 
 ## 概要
 
-このプロジェクトでは、`carAPI` というAppSync APIと、以下の2つのDynamoDBテーブルを作成します。
+このプロジェクトは以下のコンポーネントで構成されています：
 
-*   `cardata-cars`: 車の情報を格納
-*   `cardata-defects`: 車に関連する不具合情報を格納
+### バックエンド (pkgs/cdk)
 
-これらを連携させることで、特定の車の情報とその車に関連する不具合一覧を一度のGraphQLクエリで取得できます。
+AWS CDKで構築されたインフラストラクチャ：
+
+- **GraphQL API**: `carAPI` という名前のAWS AppSync API
+- **DynamoDBテーブル**:
+  - `cardata-cars`: 車の基本情報を格納
+  - `cardata-defects`: 車に関連する不具合情報を格納（GSI付き）
+- **リゾルバー**: パイプラインリゾルバーによる効率的なデータ取得
+
+### フロントエンド (pkgs/frontend)
+
+Next.js 16 (App Router) で構築されたWebアプリケーション：
+
+- **AWS Amplify**: GraphQLクライアントとしてAppSync APIと通信
+- **型安全性**: GraphQL Code Generatorによる自動型生成
+- **レスポンシブUI**: Tailwind CSS v4によるモダンなデザイン
+
+### 主要機能
+
+これらを連携させることで、以下の機能を実現しています：
+
+- ナンバープレートで車両情報を検索
+- 車両に関連するすべての不具合履歴を一度のクエリで取得
+- リアルタイムなデータ表示と型安全なフロントエンド実装
+
 データはオランダのRDW（車両登録局）の公開データに基づいています。
 
 ## 提供している機能
@@ -19,52 +42,137 @@
 *   **不具合情報の取得**: 車情報に紐付く不具合情報のリストを取得（ネストされたクエリ）。
 *   **データ投入ツール**: サンプルデータをDynamoDBに一括投入するユーティリティ。
 
+## プロジェクト構造
+
+このプロジェクトはpnpmを使用したモノレポ構成で、以下のパッケージで構成されています：
+
+```
+AppSyncSample-2/
+├── pkgs/
+│   ├── cdk/                    # AWS CDKインフラストラクチャコード
+│   │   ├── lib/                # CDKスタック定義
+│   │   ├── bin/                # CDKエントリーポイント
+│   │   ├── graphql/            # GraphQLスキーマ定義
+│   │   ├── resolvers/          # AppSyncリゾルバー (JavaScript)
+│   │   ├── utils/              # データ投入ユーティリティ
+│   │   └── package.json
+│   └── frontend/               # Next.jsフロントエンド
+│       ├── app/                # Next.js App Router
+│       ├── lib/                # GraphQLクライアント設定・型定義
+│       └── package.json
+├── package.json                # ルートパッケージ設定
+└── pnpm-workspace.yaml         # pnpmワークスペース設定
+```
+
 ## システム構成図
 
 ```mermaid
-graph TD
-    Client[Client] -->|GraphQL Query| AppSync["AWS AppSync (carAPI)"]
-    AppSync -->|GetItem| CarsTable["DynamoDB: cardata-cars"]
-    AppSync -->|"Query (GSI)"| DefectsTable["DynamoDB: cardata-defects"]
-    
-    subgraph DynamoDB
-        CarsTable
-        DefectsTable
+graph TB
+    User["ユーザー<br/>(ブラウザ)"]
+
+    subgraph Frontend["フロントエンド (pkgs/frontend)"]
+        NextJS["Next.js 16<br/>App Router"]
+        Amplify["AWS Amplify<br/>GraphQLクライアント"]
+        TypeGen["GraphQL<br/>Code Generator"]
     end
+
+    subgraph AWS["AWS環境"]
+        AppSync["AWS AppSync<br/>(carAPI)"]
+
+        subgraph Resolvers["AppSync Resolvers"]
+            GetCarResolver["getCar<br/>Resolver"]
+            GetDefectsResolver["getDefects<br/>Resolver"]
+        end
+
+        subgraph DynamoDB["DynamoDB"]
+            CarsTable["cardata-cars<br/>PK: licenseplate"]
+            DefectsTable["cardata-defects<br/>PK: id<br/>GSI: defect-by-licenseplate"]
+        end
+    end
+
+    subgraph IaC["Infrastructure as Code (pkgs/cdk)"]
+        CDK["AWS CDK<br/>TypeScript"]
+        Schema["GraphQL<br/>Schema"]
+        ResolverCode["Resolver<br/>Code (JS)"]
+    end
+
+    User -->|"http://localhost:3000"| NextJS
+    NextJS -->|"GraphQL Query"| Amplify
+    Amplify -->|"API Key認証"| AppSync
+
+    AppSync -->|"Query.getCar"| GetCarResolver
+    AppSync -->|"Car.defects"| GetDefectsResolver
+
+    GetCarResolver -->|"GetItem"| CarsTable
+    GetDefectsResolver -->|"Query (GSI)"| DefectsTable
+
+    CDK -.->|"デプロイ"| AppSync
+    CDK -.->|"デプロイ"| DynamoDB
+    Schema -.->|"定義"| AppSync
+    ResolverCode -.->|"定義"| Resolvers
+    TypeGen -.->|"型生成"| Amplify
+
+    style Frontend fill:#e1f5ff
+    style AWS fill:#fff5e1
+    style IaC fill:#f0f0f0
 ```
 
 ![Architecture](./docs/appsync-architecture.png)
 
 ## 処理シーケンス図
 
-**`getCar` クエリ実行時のフロー**
+**`getCar` クエリ実行時のフロー (フロントエンドからバックエンドまで)**
 
 ```mermaid
 sequenceDiagram
-    participant Client
-    participant AppSync
-    participant CarsResolver as getCar Resolver
-    participant CarsTable as DynamoDB (Cars)
-    participant DefectsResolver as getDefects Resolver
-    participant DefectsTable as DynamoDB (Defects)
+    participant User as ユーザー
+    participant Browser as ブラウザ<br/>(Next.js)
+    participant Amplify as AWS Amplify<br/>Client
+    participant AppSync as AWS AppSync<br/>API
+    participant GetCarResolver as getCar<br/>Resolver
+    participant CarsTable as DynamoDB<br/>(Cars)
+    participant GetDefectsResolver as getDefects<br/>Resolver
+    participant DefectsTable as DynamoDB<br/>(Defects)
 
-    Client->>AppSync: query GetCar(licenseplate: "...")
-    
-    par Fetch Car Data
-        AppSync->>CarsResolver: Invoke
-        CarsResolver->>CarsTable: GetItem (PK: licenseplate)
-        CarsTable-->>CarsResolver: Car Item
-        CarsResolver-->>AppSync: Car Data
-    end
+    User->>Browser: ナンバープレート入力<br/>"BR794ZQ3"
+    Browser->>Browser: handleSearch()
+    activate Browser
 
-    par Fetch Defects Data (Nested)
-        AppSync->>DefectsResolver: Invoke (source: Car Data)
-        DefectsResolver->>DefectsTable: Query GSI (licenseplate)
-        DefectsTable-->>DefectsResolver: Defects Items
-        DefectsResolver-->>AppSync: Defects List
-    end
+    Browser->>Amplify: client.graphql({<br/>query: GET_CAR,<br/>variables: {licenseplate}})
+    activate Amplify
 
-    AppSync-->>Client: Combined JSON Response
+    Amplify->>AppSync: POST /graphql<br/>Authorization: API_KEY<br/>query GetCar($licenseplate: String!)
+    activate AppSync
+
+    Note over AppSync: Query.getCar<br/>フィールド解決開始
+
+    AppSync->>GetCarResolver: Pipeline Resolver<br/>getCars Function
+    activate GetCarResolver
+    GetCarResolver->>CarsTable: GetItem<br/>(licenseplate: "BR794ZQ3")
+    CarsTable-->>GetCarResolver: Car Item
+    GetCarResolver-->>AppSync: Car Data
+    deactivate GetCarResolver
+
+    Note over AppSync: Car.defects<br/>ネストフィールド解決
+
+    AppSync->>GetDefectsResolver: Pipeline Resolver<br/>getDefects Function<br/>(source: Car)
+    activate GetDefectsResolver
+    GetDefectsResolver->>DefectsTable: Query<br/>GSI: defect-by-licenseplate<br/>(licenseplate: "BR794ZQ3")
+    DefectsTable-->>GetDefectsResolver: Defects Items (14件)
+    GetDefectsResolver-->>AppSync: Defects Array
+    deactivate GetDefectsResolver
+
+    Note over AppSync: レスポンス統合
+
+    AppSync-->>Amplify: GraphQL Response<br/>{data: {getCar: {...}}}
+    deactivate AppSync
+
+    Amplify-->>Browser: Typed Response<br/>GetCarQuery
+    deactivate Amplify
+
+    Browser->>Browser: setCarData(data.getCar)
+    Browser-->>User: 車両情報と不具合履歴を表示
+    deactivate Browser
 ```
 
 ## 技術スタック
@@ -88,6 +196,206 @@ sequenceDiagram
 *   **Linter / Formatter**: Biome
 *   **Testing**: Jest
 
+## GraphQL APIの詳細解説
+
+### スキーマ定義
+
+このプロジェクトのGraphQLスキーマは `pkgs/cdk/graphql/schema.graphql` に定義されています：
+
+```graphql
+# 車の情報を表す型
+type Car {
+  licenseplate: String!
+  brand: String!
+  tradename: String
+  expirydateapk: String
+  firstcolor: String!
+  cylindercount: String
+  cylindervolume: String
+  firstregistrationdate: String
+  catalogprice: String
+  length: String
+  width: String
+  # 車に関連する不具合のリスト (ネストされたフィールド)
+  defects: [Defect]
+}
+
+# 不具合情報を表す型
+type Defect {
+  licenseplate: String!
+  defectstartdate: String
+  defectdescription: String
+}
+
+type Query {
+  # ナンバープレートで車を検索するクエリ
+  getCar(licenseplate: String!): Car
+}
+```
+
+### リゾルバーアーキテクチャ
+
+AppSyncでは**パイプラインリゾルバー**を使用しています。これにより、複数の処理ステップを組み合わせて複雑なクエリを実現できます。
+
+#### 1. Query.getCar リゾルバー
+
+**ファイル**: `pkgs/cdk/resolvers/getCar.js`
+
+```javascript
+export function request(ctx) {
+  return {
+    operation: "GetItem",
+    key: util.dynamodb.toMapValues({
+      licenseplate: ctx.args.licenseplate
+    }),
+  };
+}
+
+export function response(ctx) {
+  return ctx.result;
+}
+```
+
+**動作**:
+- DynamoDBの `cardata-cars` テーブルから、指定されたナンバープレートに一致する車の情報を取得
+- `GetItem` オペレーションでプライマリキー (licenseplate) による高速な検索を実行
+
+#### 2. Car.defects リゾルバー (ネストされたフィールド)
+
+**ファイル**: `pkgs/cdk/resolvers/getDefects.js`
+
+```javascript
+export function request(ctx) {
+  const limit = 20;
+  const query = JSON.parse(
+    util.transform.toDynamoDBConditionExpression({
+      licenseplate: { eq: ctx.source.licenseplate },
+    }),
+  );
+
+  return {
+    operation: "Query",
+    index: "defect-by-licenseplate",
+    query,
+    limit
+  };
+}
+
+export function response(ctx) {
+  if (ctx.error) {
+    util.error(ctx.error.message, ctx.error.type);
+  }
+  return ctx.result.items;
+}
+```
+
+**動作**:
+- `ctx.source.licenseplate` により、親の `Car` オブジェクトからナンバープレートを取得
+- DynamoDBの `cardata-defects` テーブルのGSI (`defect-by-licenseplate`) をクエリ
+- 最大20件の不具合情報を取得
+
+#### 3. パイプラインリゾルバーの仕組み
+
+**ファイル**: `pkgs/cdk/resolvers/pipeline.js`
+
+```javascript
+export function request(_ctx) {
+  return {};
+}
+
+export function response(ctx) {
+  return ctx.prev.result;
+}
+```
+
+**動作**:
+- パイプラインリゾルバーは、複数のAppSync関数を順番に実行
+- `request`: 空のオブジェクトを返し、前の関数の結果をそのまま渡す
+- `response`: 前の関数 (`ctx.prev.result`) の結果を返す
+
+### DynamoDB テーブル設計
+
+#### Cars テーブル (cardata-cars)
+
+| 項目 | 値 |
+|------|-----|
+| **パーティションキー** | `licenseplate` (String) |
+| **用途** | 車両の基本情報を格納 |
+| **アクセスパターン** | GetItem (ナンバープレートによる直接検索) |
+
+#### Defects テーブル (cardata-defects)
+
+| 項目 | 値 |
+|------|-----|
+| **パーティションキー** | `id` (String) |
+| **GSI名** | `defect-by-licenseplate` |
+| **GSIパーティションキー** | `licenseplate` (String) |
+| **用途** | 車両に関連する不具合情報を格納 |
+| **アクセスパターン** | Query (GSI経由でナンバープレートによる検索) |
+
+**GSI (Global Secondary Index) の利点**:
+- プライマリキーとは異なる属性 (licenseplate) でクエリが可能
+- 1対多のリレーションシップを効率的に実現
+- 特定の車両に関連するすべての不具合を高速に取得
+
+### 認証方式
+
+このAPIは2つの認証方式をサポートしています：
+
+1. **API Key認証** (デフォルト)
+   - フロントエンドからのアクセスに使用
+   - 開発・テスト環境向け
+
+2. **IAM認証** (追加モード)
+   - AWS内部サービスからのアクセスに使用
+   - よりセキュアな環境向け
+
+### フロントエンドからの利用
+
+#### GraphQL Code Generatorによる型安全性
+
+`pkgs/frontend/codegen.ts` の設定により、GraphQLスキーマから自動的にTypeScript型が生成されます：
+
+```typescript
+// 自動生成される型定義の例
+export type GetCarQuery = {
+  __typename?: 'Query';
+  getCar?: {
+    __typename?: 'Car';
+    licenseplate: string;
+    brand: string;
+    tradename?: string | null;
+    defects?: Array<{
+      __typename?: 'Defect';
+      licenseplate: string;
+      defectdescription?: string | null;
+      defectstartdate?: string | null;
+    } | null> | null;
+  } | null;
+};
+```
+
+#### クエリの実行
+
+`pkgs/frontend/app/components/CarSearch.tsx` でのGraphQLクエリ実行例：
+
+```typescript
+const result = await client.graphql({
+  query: GET_CAR,
+  variables: { licenseplate: licenseplate.trim() },
+});
+
+const data = (result as any).data as GetCarQuery;
+if (data?.getCar) {
+  setCarData(data.getCar); // 型安全なデータ
+}
+```
+
+**利点**:
+- コンパイル時の型チェックによりバグを早期に発見
+- IDEの自動補完によって開発効率が向上
+- スキーマ変更時の影響範囲が明確
+
 ## 動かし方
 
 ### 前提条件
@@ -108,12 +416,17 @@ pnpm install
 ### ビルドとチェック
 
 ```bash
-# TypeScriptのビルド
+# フロントエンドのビルド
 pnpm frontend run build
+
+# CDKのビルド
 pnpm cdk run build
 
-# フォーマットの自動修正
+# フォーマットの自動修正 (全体)
 pnpm run format
+
+# Lintチェック (個別)
+pnpm frontend run lint
 ```
 
 ### デプロイ
@@ -121,16 +434,34 @@ pnpm run format
 AWS環境へデプロイします。
 
 ```bash
-pnpm cdk run deploy '*'
+# ルートディレクトリから
+pnpm cdk run deploy
+
+# または、pkgs/cdkディレクトリから
+cd pkgs/cdk
+pnpm deploy
 ```
+
+デプロイ完了後、以下の出力値をメモしてください（フロントエンド設定で使用します）：
+- `GraphQLAPIURL`: AppSync APIのエンドポイント
+- `GraphQLAPIKey`: API Key
+- `CarsTableName`: 車両テーブル名
+- `DefectsTableName`: 不具合テーブル名
 
 ### データ投入
 
 デプロイ完了後、サンプルデータをDynamoDBに投入します。
 
 ```bash
-export CDK_DEFAULT_REGION=ap-northeast-1 
-pnpm run push-data
+# 環境変数を設定 (リージョンを指定)
+export CDK_DEFAULT_REGION=ap-northeast-1
+
+# ルートディレクトリから
+pnpm cdk run push-data
+
+# または、pkgs/cdkディレクトリから
+cd pkgs/cdk
+pnpm push-data
 ```
 
 ### フロントエンド設定と起動
@@ -146,13 +477,20 @@ cp .env.local.example .env.local
    - `NEXT_PUBLIC_APPSYNC_ENDPOINT`: GraphQLAPIURL の値
    - `NEXT_PUBLIC_APPSYNC_API_KEY`: GraphQLAPIKey の値
 
-3. GraphQL型定義を生成:
+3. GraphQL型定義を生成 (frontendディレクトリから):
 
 ```bash
+cd pkgs/frontend
 pnpm codegen
 ```
 
-4. フロントエンド起動:
+または、ルートディレクトリから:
+
+```bash
+pnpm frontend run codegen
+```
+
+4. フロントエンド起動 (frontendディレクトリから、または下記コマンド):
 
 ```bash
 pnpm frontend run dev
@@ -276,7 +614,12 @@ query GetCar {
 リソースを削除する場合：
 
 ```bash
-cdk destroy
+# ルートディレクトリから
+pnpm cdk run destroy
+
+# または、pkgs/cdkディレクトリから
+cd pkgs/cdk
+pnpm destroy
 ```
 
 ## コストについて
