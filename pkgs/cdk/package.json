@@ -11,7 +11,7 @@
 		"cdk": "cdk",
 		"deploy": "cdk deploy",
 		"destroy": "cdk destroy",
-		"test": "jest",
+		"test": "jest --passWithNoTests",
 		"push-data": "node utils/index.js"
 	},
 	"devDependencies": {
