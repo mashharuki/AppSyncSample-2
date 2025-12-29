@@ -237,6 +237,14 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 					},
 				],
 			}),
+			// SPAルーティングのためのリダイレクトルールを追加
+			customRules: [
+				{
+					source: "/<*>",
+					target: "/index.html",
+					status: amplify.RedirectStatus.NOT_FOUND_REWRITE,
+				},
+			],
 		});
 
 		// mainブランチを本番環境として設定
