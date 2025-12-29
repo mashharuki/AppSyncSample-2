@@ -55,6 +55,8 @@ AppSyncSample-2/
 │   │   ├── graphql/            # GraphQLスキーマ定義
 │   │   ├── resolvers/          # AppSyncリゾルバー (JavaScript)
 │   │   ├── utils/              # データ投入ユーティリティ
+│   │   ├── test/               # ユニットテスト
+│   │   ├── jest.config.js      # Jestテスト設定
 │   │   └── package.json
 │   └── frontend/               # Next.jsフロントエンド
 │       ├── app/                # Next.js App Router
@@ -233,9 +235,63 @@ type Query {
 }
 ```
 
-### リゾルバーアーキテクチャ
+### AWS AppSyncのリゾルバーとは
 
-AppSyncでは**パイプラインリゾルバー**を使用しています。これにより、複数の処理ステップを組み合わせて複雑なクエリを実現できます。
+**リゾルバー**は、GraphQLのクエリやミューテーションがどのようにデータを取得・操作するかを定義するコンポーネントです。
+
+AppSyncにおけるリゾルバーは、GraphQLスキーマのフィールドとデータソース（DynamoDB、Lambda、HTTPエンドポイントなど）を接続する橋渡しの役割を果たします。
+
+#### リゾルバーの種類
+
+AppSyncには2種類のリゾルバーがあります：
+
+1. **ユニットリゾルバー (Unit Resolver)**
+   - 単一のデータソースに対して、1つの操作のみを実行
+   - シンプルなデータ取得に適している
+   - 例：1つのテーブルから1件のアイテムを取得
+
+2. **パイプラインリゾルバー (Pipeline Resolver)** ⭐ このプロジェクトで使用
+   - 複数のAppSync関数を順番に実行できる
+   - 各関数は異なるデータソースにアクセス可能
+   - 複雑なビジネスロジックやデータ結合に適している
+
+#### パイプラインリゾルバーのメリット
+
+このプロジェクトでパイプラインリゾルバーを採用している理由：
+
+✅ **モジュール性**: 各AppSync関数を独立したロジックとして定義でき、再利用が容易  
+✅ **柔軟性**: 複数のデータソースを組み合わせたり、条件分岐を実装できる  
+✅ **保守性**: 処理ステップが明確に分離されているため、デバッグや修正が容易  
+✅ **拡張性**: 新しい処理ステップを追加する際、既存の関数を変更せずに済む  
+
+#### このプロジェクトでの実装パターン
+
+```
+GraphQLクエリ: getCar(licenseplate: "BR794ZQ3")
+    ↓
+[パイプラインリゾルバー: PipelineResolverGetCars]
+    ↓
+[AppSync関数: getCars] → DynamoDB (cardata-cars) から車情報を取得
+    ↓
+結果を返す → { licenseplate, brand, tradename, ... }
+    ↓
+[ネストされたフィールド: defects]
+    ↓
+[パイプラインリゾルバー: PipelineResolverGetDefects]
+    ↓
+[AppSync関数: getDefects] → DynamoDB (cardata-defects/GSI) から不具合情報を取得
+    ↓
+最終結果: Car オブジェクト + 関連する Defects 配列
+```
+
+**ポイント**:
+- `Query.getCar` は車の基本情報を取得
+- `Car.defects` フィールドは、親の `Car` オブジェクトから `licenseplate` を受け取り、関連する不具合を自動的に取得
+- クライアントは1回のGraphQLクエリで、車と不具合の両方を取得できる（N+1問題を回避）
+
+### リゾルバーアーキテクチャの詳細
+
+このプロジェクトでは**パイプラインリゾルバー**を使用して、効率的なデータ取得を実現しています。
 
 #### 1. Query.getCar リゾルバー
 
@@ -312,6 +368,59 @@ export function response(ctx) {
 - パイプラインリゾルバーは、複数のAppSync関数を順番に実行
 - `request`: 空のオブジェクトを返し、前の関数の結果をそのまま渡す
 - `response`: 前の関数 (`ctx.prev.result`) の結果を返す
+
+このプロジェクトでは、各パイプラインリゾルバーは**1つのAppSync関数のみ**を含むシンプルな構成ですが、必要に応じて複数の関数を連鎖させることも可能です。
+
+#### 4. CDKでのパイプラインリゾルバー定義
+
+**ファイル**: `pkgs/cdk/lib/cdk-appsync-demo-stack.ts`
+
+```typescript
+// AppSync関数の定義
+const carsResolver = new AppsyncFunction(this, "CarsFunction", {
+  name: "getCars",
+  api,
+  dataSource: carsDataSource,
+  code: Code.fromAsset(path.join(__dirname, "../resolvers/getCar.js")),
+  runtime: FunctionRuntime.JS_1_0_0,
+});
+
+// パイプラインリゾルバーの定義
+new Resolver(this, "PipelineResolverGetCars", {
+  api,
+  typeName: "Query",           // GraphQLスキーマの型名
+  fieldName: "getCar",          // GraphQLスキーマのフィールド名
+  runtime: FunctionRuntime.JS_1_0_0,
+  code: Code.fromAsset(path.join(__dirname, "../resolvers/pipeline.js")),
+  pipelineConfig: [carsResolver], // 実行する関数のリスト
+});
+```
+
+**構成要素**:
+- **AppsyncFunction**: 実際のデータソース操作を行う関数（getCars, getDefects）
+- **Resolver**: GraphQLフィールドとAppSync関数を接続するパイプライン定義
+- **pipelineConfig**: 実行する関数の配列（この例では1つだけだが、複数指定可能）
+
+**実行フロー**:
+```
+GraphQLクエリ → Resolver (pipeline.js)
+                    ↓
+                 [request関数] → {}を返す
+                    ↓
+                 AppsyncFunction (getCar.js)
+                    ↓
+                 [request関数] → DynamoDBへのGetItemリクエスト生成
+                    ↓
+                 DynamoDB実行
+                    ↓
+                 [response関数] → 結果を返す
+                    ↓
+                 Resolver (pipeline.js)
+                    ↓
+                 [response関数] → ctx.prev.result を返す
+                    ↓
+                 クライアントへ結果を返却
+```
 
 ### DynamoDB テーブル設計
 
@@ -428,6 +537,38 @@ pnpm run format
 # Lintチェック (個別)
 pnpm frontend run lint
 ```
+
+### テスト
+
+#### CDKスタックのユニットテスト
+
+CDKインフラストラクチャの正確性を検証するための包括的なユニットテストが実装されています。
+
+```bash
+# CDKのテストを実行
+pnpm --filter cdk test
+
+# または、pkgs/cdkディレクトリから
+cd pkgs/cdk
+pnpm test
+
+# カバレッジレポート付きでテストを実行
+pnpm test -- --coverage
+```
+
+**テスト内容**:
+- ✅ **DynamoDBテーブル**: Cars/Defectsテーブルの作成と設定
+- ✅ **グローバルセカンダリインデックス (GSI)**: defect-by-licenseplateの設定
+- ✅ **AppSync GraphQL API**: API作成、認証設定、スキーマ定義
+- ✅ **データソース**: DynamoDBデータソースの接続
+- ✅ **AppSync関数**: getCars/getDefects関数の設定
+- ✅ **パイプラインリゾルバー**: Query.getCar/Car.defectsリゾルバー
+- ✅ **IAMロールとポリシー**: 適切な権限設定
+- ✅ **CloudFormation出力**: API URL、API Key、テーブル名の出力
+- ✅ **スナップショットテスト**: スタック全体の構成変更検出
+
+テストフレームワーク: **Jest** + **AWS CDK Assertions**  
+テストファイル: `pkgs/cdk/test/cdk-appsync-demo-stack.test.ts`
 
 ### デプロイ
 
@@ -631,3 +772,9 @@ pnpm destroy
 ![](./docs/0.png)
 
 ![](./docs/1.png)
+
+![](./docs/3.png)
+
+![](./docs/4.png)
+
+![](./docs/5.png)

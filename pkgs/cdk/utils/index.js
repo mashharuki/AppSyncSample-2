@@ -1,9 +1,11 @@
 const { DynamoDBClient, PutItemCommand } = require("@aws-sdk/client-dynamodb");
 
+// DynamoDBクライアントの作成
 const client = new DynamoDBClient({
 	region: process.env.CDK_DEFAULT_REGION,
 });
 
+// DynamoDBテーブル名の定義
 const carsTableName = "cardata-cars";
 const defectsTableName = "cardata-defects";
 
@@ -23,6 +25,7 @@ const convertToPutItemInput = (table, prop) => {
 const executeWithDelay = async (command) => {
 	return new Promise((resolve) => {
 		setTimeout(async () => {
+			// DynamoDBにデータを送信
 			await client.send(command);
 			resolve();
 		}, 250); // 各実行の間に250ミリ秒の遅延を入れる
@@ -35,8 +38,11 @@ const processCarsData = async () => {
 		console.log(
 			`[${i + 1}/${carsData.length + 1}] - 車のデータをDynamoDBに送信中... ナンバープレート: ${carsData[i].licenseplate.S}`,
 		);
+		// 車オブジェクトをPutItemInput形式に変換
 		const input = convertToPutItemInput(carsTableName, carsData[i]);
+		// PutItemCommandの作成
 		const command = new PutItemCommand(input);
+		// 実行
 		await executeWithDelay(command);
 	}
 };
@@ -47,8 +53,11 @@ const processDefectsData = async () => {
 		console.log(
 			`[${i + 1}/${defectsData.length + 1}] - 不具合データをDynamoDBに送信中... ナンバープレート: ${defectsData[i].licenseplate.S}`,
 		);
+		// 不具合オブジェクトをPutItemInput形式に変換
 		const input = convertToPutItemInput(defectsTableName, defectsData[i]);
+		// PutItemCommandの作成
 		const command = new PutItemCommand(input);
+		// 実行
 		await executeWithDelay(command);
 	}
 };

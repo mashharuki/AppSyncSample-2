@@ -26,7 +26,10 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 	constructor(scope: Construct, id: string, props?: cdk.StackProps) {
 		super(scope, id, props);
 
+		// ==================================================
 		// DynamoDBテーブルの作成
+		// ==================================================
+
 		// 車の情報を格納するテーブル
 		const carsTable = new Table(this, "CarTable", {
 			partitionKey: { name: "licenseplate", type: AttributeType.STRING },
@@ -58,12 +61,18 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 			writeCapacity: 4,
 		});
 
+		// ==================================================
 		// AppSync API (GraphQL API) の作成
+		// ==================================================
+
+		// GraphQL APIの定義
 		const api = new GraphqlApi(this, "CarApi", {
 			name: "carAPI",
+			// スキーマの読み込み
 			definition: Definition.fromFile(
 				path.join(__dirname, "../graphql/schema.graphql"),
 			),
+			// 認証設定
 			authorizationConfig: {
 				defaultAuthorization: {
 					authorizationType: AuthorizationType.API_KEY,
@@ -87,13 +96,25 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 			defectsTable,
 		);
 
+		// ==================================================
 		// AppSync関数 (リゾルバー) の定義
-		// 車情報を取得する関数
+		// ==================================================
+
+		// 車情報を取得する関数（個別取得）
 		const carsResolver = new AppsyncFunction(this, "CarsFunction", {
 			name: "getCars",
 			api,
 			dataSource: carsDataSource,
 			code: Code.fromAsset(path.join(__dirname, "../resolvers/getCar.js")),
+			runtime: FunctionRuntime.JS_1_0_0,
+		});
+
+		// 全車両を取得する関数（一覧取得）
+		const listCarsResolver = new AppsyncFunction(this, "ListCarsFunction", {
+			name: "listCars",
+			api,
+			dataSource: carsDataSource,
+			code: Code.fromAsset(path.join(__dirname, "../resolvers/listCars.js")),
 			runtime: FunctionRuntime.JS_1_0_0,
 		});
 
@@ -106,7 +127,10 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 			runtime: FunctionRuntime.JS_1_0_0,
 		});
 
+		// ==================================================
 		// パイプラインリゾルバーの設定
+		// ==================================================
+
 		// Query.getCar に対するリゾルバー
 		new Resolver(this, "PipelineResolverGetCars", {
 			api,
@@ -115,6 +139,16 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 			runtime: FunctionRuntime.JS_1_0_0,
 			code: Code.fromAsset(path.join(__dirname, "../resolvers/pipeline.js")),
 			pipelineConfig: [carsResolver],
+		});
+
+		// Query.listCars に対するリゾルバー
+		new Resolver(this, "PipelineResolverListCars", {
+			api,
+			typeName: "Query",
+			fieldName: "listCars",
+			runtime: FunctionRuntime.JS_1_0_0,
+			code: Code.fromAsset(path.join(__dirname, "../resolvers/pipeline.js")),
+			pipelineConfig: [listCarsResolver],
 		});
 
 		// Car.defects に対するリゾルバー (ネストされたクエリ用)

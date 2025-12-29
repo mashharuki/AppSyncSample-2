@@ -25,6 +25,14 @@ type Defect {
 type Query {
 	# ナンバープレートで車を検索するクエリ
 	getCar(licenseplate: String!): Car
+	# 全車両を取得するクエリ（ページネーション対応）
+	listCars(limit: Int, nextToken: String): CarsConnection
+}
+
+# ページネーション用のコネクション型
+type CarsConnection {
+	items: [Car]
+	nextToken: String
 }
 
 schema {
