@@ -1,0 +1,27 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        # pnpmのインストール
+        - npm install -g pnpm@10.20.0
+        # 依存関係のインストール
+        - pnpm install
+    build:
+      commands:
+        # GraphQL型定義の生成
+        - pnpm --filter frontend codegen
+        # Next.jsアプリケーションのビルド
+        - pnpm --filter frontend build
+  artifacts:
+    # Next.jsのビルド出力
+    baseDirectory: pkgs/frontend/.next
+    files:
+      - '**/*'
+  cache:
+    paths:
+      # pnpmキャッシュ
+      - ~/.pnpm-store/**/*
+      # Next.jsキャッシュ
+      - pkgs/frontend/.next/cache/**/*
+      - pkgs/frontend/node_modules/**/*
