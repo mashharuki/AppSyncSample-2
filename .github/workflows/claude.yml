@@ -1,8 +1,11 @@
 name: Claude Code
 
 on:
+  # トリアージの設定
+  # イシューのコメント
   issue_comment:
     types: [created]
+  # PRのレビューコメント
   pull_request_review_comment:
     types: [created]
   issues:
@@ -30,6 +33,7 @@ jobs:
         with:
           fetch-depth: 1
 
+      # Claude Code Actionの実行
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@v1
