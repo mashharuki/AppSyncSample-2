@@ -9,6 +9,8 @@ import {
 	Resolver,
 } from "aws-cdk-lib/aws-appsync";
 import { AttributeType, BillingMode, Table } from "aws-cdk-lib/aws-dynamodb";
+import * as amplify from "@aws-cdk/aws-amplify-alpha";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import type { Construct } from "constructs";
 
 import path = require("node:path");
@@ -179,6 +181,98 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 
 		new cdk.CfnOutput(this, "DefectsTableName", {
 			value: defectsTable.tableName,
+		});
+
+		// ==================================================
+		// AWS Amplify Hosting の設定
+		// ==================================================
+
+		// GitHubトークンをSecrets Managerから取得
+		// 事前に以下のコマンドでシークレットを作成する必要があります:
+		// aws secretsmanager create-secret --name github-token --secret-string "your-github-token"
+		const githubToken = secretsmanager.Secret.fromSecretNameV2(
+			this,
+			"GitHubToken",
+			"github-token",
+		);
+
+		// Amplify Appの作成
+		const amplifyApp = new amplify.App(this, "FrontendApp", {
+			appName: "appsync-sample-frontend",
+			sourceCodeProvider: new amplify.GitHubSourceCodeProvider({
+				owner: "mashharuki", // GitHubユーザー名
+				repository: "AppSyncSample-2", // リポジトリ名
+				oauthToken: githubToken.secretValue,
+			}),
+			environmentVariables: {
+				NEXT_PUBLIC_APPSYNC_ENDPOINT: api.graphqlUrl,
+				NEXT_PUBLIC_APPSYNC_API_KEY: api.apiKey || "",
+				NEXT_PUBLIC_AWS_REGION: this.region,
+			},
+			buildSpec: cdk.aws_codebuild.BuildSpec.fromObjectToYaml({
+				version: 1,
+				applications: [
+					{
+						appRoot: "pkgs/frontend",
+						frontend: {
+							phases: {
+								preBuild: {
+									commands: [
+										"corepack enable",
+										"corepack prepare pnpm@latest --activate",
+										"cd ../..",
+										"pnpm install --frozen-lockfile",
+										"cd pkgs/frontend",
+										"pnpm run codegen",
+									],
+								},
+								build: {
+									commands: ["pnpm run build"],
+								},
+							},
+							artifacts: {
+								baseDirectory: ".next",
+								files: ["**/*"],
+							},
+							cache: {
+								paths: [
+									"../../node_modules/**/*",
+									"node_modules/**/*",
+									".next/cache/**/*",
+								],
+							},
+						},
+					},
+				],
+			}),
+		});
+
+		// mainブランチを本番環境として設定
+		const mainBranch = amplifyApp.addBranch("main", {
+			stage: "PRODUCTION",
+			branchName: "main",
+			autoBuild: true,
+		});
+
+		// 開発ブランチの追加（オプション）
+		amplifyApp.addBranch("develop", {
+			stage: "DEVELOPMENT",
+			branchName: "develop",
+			autoBuild: true,
+		});
+
+		// ==================================================
+		// Amplify関連の出力
+		// ==================================================
+
+		new cdk.CfnOutput(this, "AmplifyAppId", {
+			value: amplifyApp.appId,
+			description: "Amplify App ID",
+		});
+
+		new cdk.CfnOutput(this, "AmplifyAppURL", {
+			value: `https://main.${amplifyApp.defaultDomain}`,
+			description: "Amplify App URL",
 		});
 	}
 }

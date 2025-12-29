@@ -588,6 +588,48 @@ pnpm deploy
 - `GraphQLAPIKey`: API Key
 - `CarsTableName`: 車両テーブル名
 - `DefectsTableName`: 不具合テーブル名
+- `AmplifyAppId`: Amplify App ID (Amplifyホスティングを有効にした場合)
+- `AmplifyAppURL`: Amplify App URL (Amplifyホスティングを有効にした場合)
+
+### AWS Amplify ホスティング (オプション)
+
+このプロジェクトには、AWS Amplifyを使用したフロントエンドの自動デプロイ機能が含まれています。
+
+#### 前提条件
+
+1. GitHubの個人アクセストークン (Personal Access Token) を作成
+2. AWS Secrets Managerにトークンを保存
+
+詳細な手順は **[Amplify CDKセットアップガイド](./docs/AMPLIFY_CDK_SETUP.md)** を参照してください。
+
+#### クイックスタート
+
+```bash
+# 1. GitHubトークンをSecrets Managerに保存
+aws secretsmanager create-secret \
+  --name github-token \
+  --secret-string "ghp_your_github_token_here" \
+  --region ap-northeast-1
+
+# 2. 依存関係のインストール
+pnpm install
+
+# 3. CDKスタックのデプロイ (Amplifyホスティングを含む)
+pnpm cdk run deploy
+```
+
+デプロイ後、Amplifyが自動的にフロントエンドをビルド・デプロイします。
+
+#### Amplifyホスティングの利点
+
+- ✅ GitHubへのプッシュで自動デプロイ
+- ✅ 環境変数の自動注入 (AppSyncエンドポイント、APIキー)
+- ✅ マルチブランチデプロイ (main = 本番、develop = 開発)
+- ✅ カスタムドメイン対応
+- ✅ SSLサポート
+- ✅ グローバルCDN (CloudFront)
+
+詳細は **[docs/AMPLIFY_CDK_SETUP.md](./docs/AMPLIFY_CDK_SETUP.md)** を参照してください。
 
 ### データ投入
 
