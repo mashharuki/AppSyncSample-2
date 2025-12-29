@@ -167,13 +167,20 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 		// AWS Amplify Hosting の設定
 		// ==================================================
 
-		// GitHubトークンをSecrets Managerから取得
-		// 事前に以下のコマンドでシークレットを作成する必要があります:
-		const githubToken = secretsmanager.Secret.fromSecretNameV2(
-			this,
-			"GitHubToken",
-			"github-token",
-		);
+		// 環境変数からGitHubトークンを取得
+		const githubTokenValue = process.env.GITHUB_TOKEN;
+		if (!githubTokenValue) {
+			throw new Error(
+				"GITHUB_TOKEN environment variable is required for Amplify deployment",
+			);
+		}
+
+		// Secret ManagerにGitHubトークンを作成
+		const githubToken = new secretsmanager.Secret(this, "GitHubToken", {
+			secretName: "github-token",
+			secretStringValue: cdk.SecretValue.unsafePlainText(githubTokenValue),
+			description: "GitHub Personal Access Token for Amplify Hosting",
+		});
 
 		// Amplify Appの作成
 		const amplifyApp = new amplify.App(this, "FrontendApp", {
