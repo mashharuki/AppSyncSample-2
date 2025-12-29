@@ -231,7 +231,7 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 								},
 							},
 							artifacts: {
-								baseDirectory: ".next",
+								baseDirectory: ".next/standalone",
 								files: ["**/*"],
 							},
 							cache: {
