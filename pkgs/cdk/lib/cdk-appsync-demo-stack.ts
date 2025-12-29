@@ -12,6 +12,10 @@ import {
 import { AttributeType, BillingMode, Table } from "aws-cdk-lib/aws-dynamodb";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import type { Construct } from "constructs";
+import * as dotenv from "dotenv";
+
+// .envファイルの内容を環境変数にロード
+dotenv.config();
 
 import path = require("node:path");
 
