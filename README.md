@@ -614,7 +614,10 @@ aws secretsmanager create-secret \
 # 2. 依存関係のインストール
 pnpm install
 
-# 3. CDKスタックのデプロイ (Amplifyホスティングを含む)
+# 3. GitHub アクセストークンを SecretMangerに追加
+aws secretsmanager create-secret --name github-token --secret-string "your-github-token"
+
+# 4. CDKスタックのデプロイ (Amplifyホスティングを含む)
 pnpm cdk run deploy
 ```
 
