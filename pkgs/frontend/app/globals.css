@@ -102,13 +102,212 @@ body {
 /* Glass morphism */
 .glass {
   background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* Amplify UI Overrides for Premium Look */
+[data-amplify-authenticator],
+[data-amplify-authenticator] [data-amplify-container],
+[data-amplify-authenticator] [data-amplify-router],
+[data-amplify-authenticator] .amplify-authenticator {
+  --amplify-colors-brand-primary-10: oklch(var(--primary) / 0.1) !important;
+  --amplify-colors-brand-primary-20: oklch(var(--primary) / 0.2) !important;
+  --amplify-colors-brand-primary-40: oklch(var(--primary) / 0.4) !important;
+  --amplify-colors-brand-primary-60: oklch(var(--primary) / 0.6) !important;
+  --amplify-colors-brand-primary-80: oklch(var(--primary) / 0.8) !important;
+  --amplify-colors-brand-primary-90: oklch(var(--primary) / 0.9) !important;
+  --amplify-colors-brand-primary-100: oklch(var(--primary)) !important;
+
+  --amplify-colors-background-primary: transparent !important;
+  --amplify-colors-background-secondary: rgba(255, 255, 255, 0.03) !important;
+  
+  --amplify-colors-font-primary: white !important;
+  --amplify-colors-font-secondary: rgba(255, 255, 255, 0.7) !important;
+  --amplify-colors-font-tertiary: rgba(255, 255, 255, 0.5) !important;
+
+  --amplify-colors-border-primary: rgba(255, 255, 255, 0.1) !important;
+  --amplify-colors-border-secondary: rgba(255, 255, 255, 0.05) !important;
+
+  --amplify-components-fieldcontrol-focus-box-shadow: 0 0 0 2px oklch(var(--primary) / 0.5) !important;
+  --amplify-components-button-primary-background-color: oklch(var(--primary)) !important;
+  --amplify-components-button-primary-hover-background-color: oklch(var(--primary) / 0.9) !important;
+  
+  --amplify-components-tabs-item-active-border-color: oklch(var(--primary)) !important;
+  --amplify-components-tabs-item-color: rgba(255, 255, 255, 0.6) !important;
+  --amplify-components-tabs-item-active-color: white !important;
+  
+  border: none !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Specific regional layout overrides */
+[data-amplify-authenticator] [data-amplify-router],
+[data-amplify-authenticator] .amplify-authenticator,
+[data-amplify-authenticator] .amplify-form,
+[data-amplify-authenticator] .amplify-tabs {
+    background-color: transparent !important;
+    background: transparent !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+[data-amplify-authenticator] .amplify-tabs {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  flex-direction: column !important; /* Stack context for list */
+  justify-content: center !important;
+  margin-bottom: 2rem !important;
+}
+
+[data-amplify-authenticator] .amplify-tabs__list {
+  display: flex !important;
+  flex-direction: row !important;
+  width: 100% !important;
+  gap: 0.5rem !important;
+  justify-content: center !important;
+}
+
+[data-amplify-authenticator] .amplify-tabs__item {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 140px !important;
+  max-width: 180px !important;
+  padding: 0.75rem 1.5rem !important;
+  text-align: center !important;
+  border-bottom: 2px solid transparent !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-weight: 600 !important;
+  transition: all 0.2s !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+[data-amplify-authenticator] .amplify-tabs__item--active {
+  color: white !important;
+  border-bottom: 2px solid #3b82f6 !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Center all child elements and text within tabs */
+[data-amplify-authenticator] .amplify-tabs__item *,
+[data-amplify-authenticator] .amplify-tabs__item span,
+[data-amplify-authenticator] .amplify-tabs__item button {
+  text-align: center !important;
+  justify-content: center !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* Fixed Primary Buttons */
+[data-amplify-authenticator] button.amplify-button--primary,
+[data-amplify-authenticator] button[type="submit"] {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  color: white !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  padding: 1.2rem 2.5rem !important;
+  border-radius: 12px !important;
+  margin-top: 2rem !important;
+  width: 100% !important;
+  display: block !important;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.5), 0 0 10px rgba(139, 92, 246, 0.3) !important;
+  cursor: pointer !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+[data-amplify-authenticator] button.amplify-button--primary:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 12px 30px rgba(59, 130, 246, 0.6), 0 0 20px rgba(139, 92, 246, 0.5) !important;
+  filter: brightness(1.1) !important;
+}
+
+/* Input and Eye Icon Positioning Fix */
+[data-amplify-authenticator] .amplify-field-group {
+    display: flex !important;
+    width: 100% !important;
+    flex-direction: row !important; /* Row for input + icon end */
+    position: relative !important;
+}
+
+[data-amplify-authenticator] .amplify-input {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 12px !important;
+  padding: 0.75rem 1rem !important;
+  padding-right: 3.5rem !important;
+  width: 100% !important;
+  flex: 1 !important;
+}
+
+[data-amplify-authenticator] .amplify-field-group__control {
+    position: relative !important;
+    width: 100% !important;
+    display: flex !important;
+}
+
+[data-amplify-authenticator] .amplify-field-group__outer-end {
+    position: absolute !important;
+    right: 0.25rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 20 !important;
+    background: transparent !important;
+    display: flex !important;
+    width: auto !important; /* Stop spanning full width */
+}
+
+[data-amplify-authenticator] button.amplify-field__show-password {
+    background: transparent !important;
+    border: none !important;
+    padding: 0.5rem !important;
+    color: white !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    box-shadow: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+[data-amplify-authenticator] .amplify-label {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.5rem !important;
+  text-align: left !important;
+  display: block !important;
+  width: 100% !important;
+}
+
+[data-amplify-authenticator] .amplify-heading {
+  color: white !important;
+}
+
+[data-amplify-authenticator] .amplify-text {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Fix tab styling */
+[data-amplify-authenticator] .amplify-tabs__item--active {
+    border-bottom-width: 2px !important;
 }
 
 /* Gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #60a5fa 0%, #a855f7 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;

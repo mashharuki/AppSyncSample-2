@@ -33,3 +33,25 @@ export const amplifyConfig: ResourcesConfig = {
     },
   },
 };
+
+// 必須の環境変数が設定されているかチェック
+if (typeof window !== "undefined") {
+  // Next.jsはビルド時に環境変数を静的に置換するため、直接アクセスする必要がある
+  if (!process.env.NEXT_PUBLIC_USER_POOL_ID) {
+    console.warn(
+      "[Amplify Config Warning]: NEXT_PUBLIC_USER_POOL_ID is not defined. Authentication or API calls may fail."
+    );
+  }
+  
+  if (!process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID) {
+    console.warn(
+      "[Amplify Config Warning]: NEXT_PUBLIC_USER_POOL_CLIENT_ID is not defined. Authentication or API calls may fail."
+    );
+  }
+  
+  if (!process.env.NEXT_PUBLIC_APPSYNC_ENDPOINT) {
+    console.warn(
+      "[Amplify Config Warning]: NEXT_PUBLIC_APPSYNC_ENDPOINT is not defined. Authentication or API calls may fail."
+    );
+  }
+}
