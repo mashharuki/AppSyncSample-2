@@ -119,8 +119,29 @@ describe("CdkAppsyncDemoStack", () => {
 		test("GraphQL API が作成される", () => {
 			template.hasResourceProperties("AWS::AppSync::GraphQLApi", {
 				Name: "carAPI",
-				AuthenticationType: "API_KEY",
+				AuthenticationType: "AMAZON_COGNITO_USER_POOLS",
 				XrayEnabled: true,
+			});
+		});
+
+		test("Cognito User Pool 認証が設定される", () => {
+			template.hasResourceProperties("AWS::AppSync::GraphQLApi", {
+				Name: "carAPI",
+				AuthenticationType: "AMAZON_COGNITO_USER_POOLS",
+				UserPoolConfig: {},
+			});
+		});
+
+		test("追加認証モードとして API_KEY が設定される", () => {
+			template.hasResourceProperties("AWS::AppSync::GraphQLApi", {
+				AdditionalAuthenticationProviders: [
+					{
+						AuthenticationType: "API_KEY",
+					},
+					{
+						AuthenticationType: "AWS_IAM",
+					},
+				],
 			});
 		});
 
@@ -184,8 +205,18 @@ describe("CdkAppsyncDemoStack", () => {
 			});
 		});
 
-		test("AppSync 関数が 2 つ作成される", () => {
-			template.resourceCountIs("AWS::AppSync::FunctionConfiguration", 2);
+		test("listCars 関数が作成される", () => {
+			template.hasResourceProperties("AWS::AppSync::FunctionConfiguration", {
+				Name: "listCars",
+				Runtime: {
+					Name: "APPSYNC_JS",
+					RuntimeVersion: "1.0.0",
+				},
+			});
+		});
+
+		test("AppSync 関数が 3 つ作成される", () => {
+			template.resourceCountIs("AWS::AppSync::FunctionConfiguration", 3);
 		});
 	});
 
@@ -218,8 +249,20 @@ describe("CdkAppsyncDemoStack", () => {
 			});
 		});
 
-		test("リゾルバーが 2 つ作成される", () => {
-			template.resourceCountIs("AWS::AppSync::Resolver", 2);
+		test("Query.listCars リゾルバーが作成される", () => {
+			template.hasResourceProperties("AWS::AppSync::Resolver", {
+				TypeName: "Query",
+				FieldName: "listCars",
+				Kind: "PIPELINE",
+				Runtime: {
+					Name: "APPSYNC_JS",
+					RuntimeVersion: "1.0.0",
+				},
+			});
+		});
+
+		test("リゾルバーが 3 つ作成される", () => {
+			template.resourceCountIs("AWS::AppSync::Resolver", 3);
 		});
 	});
 
@@ -272,6 +315,106 @@ describe("CdkAppsyncDemoStack", () => {
 	});
 
 	// ==================================================
+	// Cognito User Pool のテスト
+	// ==================================================
+
+	describe("Cognito User Pool", () => {
+		test("User Pool が作成される", () => {
+			template.hasResourceProperties("AWS::Cognito::UserPool", {
+				UserPoolName: "appsync-sample-user-pool",
+				UsernameAttributes: ["email"],
+			});
+		});
+
+		test("User Pool でメール検証が有効化される", () => {
+			template.hasResourceProperties("AWS::Cognito::UserPool", {
+				AutoVerifiedAttributes: ["email"],
+			});
+		});
+
+		test("User Pool でセルフサインアップが有効化される", () => {
+			template.hasResourceProperties("AWS::Cognito::UserPool", {
+				AdminCreateUserConfig: {
+					AllowAdminCreateUserOnly: false,
+				},
+			});
+		});
+
+		test("User Pool でパスワードポリシーが設定される", () => {
+			template.hasResourceProperties("AWS::Cognito::UserPool", {
+				Policies: {
+					PasswordPolicy: {
+						MinimumLength: 8,
+						RequireLowercase: true,
+						RequireUppercase: true,
+						RequireNumbers: true,
+						RequireSymbols: false,
+					},
+				},
+			});
+		});
+
+		test("User Pool でアカウントリカバリー設定が有効化される", () => {
+			template.hasResourceProperties("AWS::Cognito::UserPool", {
+				AccountRecoverySetting: {
+					RecoveryMechanisms: [
+						{
+							Name: "verified_email",
+							Priority: 1,
+						},
+					],
+				},
+			});
+		});
+
+		test("User Pool が 1 つ作成される", () => {
+			template.resourceCountIs("AWS::Cognito::UserPool", 1);
+		});
+	});
+
+	// ==================================================
+	// Cognito User Pool Client のテスト
+	// ==================================================
+
+	describe("Cognito User Pool Client", () => {
+		test("User Pool Client が作成される", () => {
+			template.hasResourceProperties("AWS::Cognito::UserPoolClient", {
+				ClientName: "appsync-sample-web-client",
+			});
+		});
+
+		test("User Pool Client で認証フローが設定される", () => {
+			template.hasResourceProperties("AWS::Cognito::UserPoolClient", {
+				ExplicitAuthFlows: [
+					"ALLOW_USER_PASSWORD_AUTH",
+					"ALLOW_USER_SRP_AUTH",
+					"ALLOW_REFRESH_TOKEN_AUTH",
+				],
+			});
+		});
+
+		test("User Pool Client で OAuth 設定が有効化される", () => {
+			template.hasResourceProperties("AWS::Cognito::UserPoolClient", {
+				AllowedOAuthFlows: ["code"],
+				AllowedOAuthFlowsUserPoolClient: true,
+				AllowedOAuthScopes: ["email", "openid", "profile"],
+			});
+		});
+
+		test("User Pool Client でトークン有効期限が設定される", () => {
+			template.hasResourceProperties("AWS::Cognito::UserPoolClient", {
+				AccessTokenValidity: 60, // 1時間（分単位）
+				IdTokenValidity: 60, // 1時間（分単位）
+				RefreshTokenValidity: 43200, // 30日（分単位）
+			});
+		});
+
+		test("User Pool Client が 1 つ作成される", () => {
+			template.resourceCountIs("AWS::Cognito::UserPoolClient", 1);
+		});
+	});
+
+	// ==================================================
 	// CloudFormation 出力のテスト
 	// ==================================================
 
@@ -294,6 +437,24 @@ describe("CdkAppsyncDemoStack", () => {
 			const outputs = template.findOutputs("DefectsTableName");
 			expect(Object.keys(outputs)).toHaveLength(1);
 			expect(outputs.DefectsTableName).toBeDefined();
+		});
+
+		test("User Pool ID が出力される", () => {
+			const outputs = template.findOutputs("UserPoolId");
+			expect(Object.keys(outputs)).toHaveLength(1);
+			expect(outputs.UserPoolId).toBeDefined();
+		});
+
+		test("User Pool Client ID が出力される", () => {
+			const outputs = template.findOutputs("UserPoolClientId");
+			expect(Object.keys(outputs)).toHaveLength(1);
+			expect(outputs.UserPoolClientId).toBeDefined();
+		});
+
+		test("User Pool ARN が出力される", () => {
+			const outputs = template.findOutputs("UserPoolArn");
+			expect(Object.keys(outputs)).toHaveLength(1);
+			expect(outputs.UserPoolArn).toBeDefined();
 		});
 	});
 

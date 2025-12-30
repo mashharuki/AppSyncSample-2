@@ -1,4 +1,6 @@
 import CarList from "../components/CarList";
+import Header from "../components/Header";
+import ProtectedRoute from "../components/ProtectedRoute";
 import { ArrowLeft, Car } from "lucide-react";
 import Link from "next/link";
 
@@ -9,6 +11,7 @@ export const metadata = {
 
 export default function CarsPage() {
   return (
+    <ProtectedRoute>
     <div className="min-h-screen relative overflow-hidden">
       {/* Animated background */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900">
@@ -21,6 +24,9 @@ export default function CarsPage() {
           style={{ animationDelay: "2s" }}
         />
       </div>
+
+      {/* Header */}
+      <Header />
 
       {/* Content */}
       <div className="relative z-10 min-h-screen py-12 px-4 sm:px-6 lg:px-8">
@@ -42,5 +48,6 @@ export default function CarsPage() {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

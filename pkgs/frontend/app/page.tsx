@@ -1,9 +1,12 @@
 import CarSearch from "./components/CarSearch";
+import Header from "./components/Header";
+import ProtectedRoute from "./components/ProtectedRoute";
 import { Car, Sparkles, List } from "lucide-react";
 import Link from "next/link";
 
 export default function Home() {
   return (
+    <ProtectedRoute>
     <div className="min-h-screen relative overflow-hidden">
       {/* Animated background */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900">
@@ -11,6 +14,9 @@ export default function Home() {
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/30 rounded-full blur-3xl animate-float" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/30 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
       </div>
+
+      {/* Header */}
+      <Header />
 
       {/* Content */}
       <div className="relative z-10 min-h-screen py-12 px-4 sm:px-6 lg:px-8">
@@ -71,5 +77,6 @@ export default function Home() {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

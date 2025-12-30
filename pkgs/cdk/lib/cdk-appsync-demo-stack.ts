@@ -9,6 +9,12 @@ import {
 	GraphqlApi,
 	Resolver,
 } from "aws-cdk-lib/aws-appsync";
+import {
+	AccountRecovery,
+	UserPool,
+	UserPoolClient,
+	VerificationEmailStyle,
+} from "aws-cdk-lib/aws-cognito";
 import { AttributeType, BillingMode, Table } from "aws-cdk-lib/aws-dynamodb";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import type { Construct } from "constructs";
@@ -68,6 +74,73 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 		});
 
 		// ==================================================
+		// Cognito User Pool の作成
+		// ==================================================
+
+		// ユーザー認証用のUser Poolを作成
+		const userPool = new UserPool(this, "UserPool", {
+			userPoolName: "appsync-sample-user-pool",
+			// サインイン設定: メールアドレスを使用
+			signInAliases: {
+				email: true,
+				username: false,
+			},
+			// セルフサインアップを有効化
+			selfSignUpEnabled: true,
+			// メールアドレスの検証を必須化
+			autoVerify: {
+				email: true,
+			},
+			// パスワードポリシー
+			passwordPolicy: {
+				minLength: 8,
+				requireLowercase: true,
+				requireUppercase: true,
+				requireDigits: true,
+				requireSymbols: false,
+			},
+			// アカウントリカバリー設定
+			accountRecovery: AccountRecovery.EMAIL_ONLY,
+			// メール検証メッセージのカスタマイズ
+			userVerification: {
+				emailSubject: "AppSync Sample - メールアドレスの確認",
+				emailBody:
+					"AppSync Sampleへようこそ！以下の確認コードを入力してメールアドレスを確認してください: {####}",
+				emailStyle: VerificationEmailStyle.CODE,
+			},
+			// リソース削除時にUser Poolも削除（開発環境用）
+			removalPolicy: cdk.RemovalPolicy.DESTROY,
+		});
+
+		// User Pool Client（フロントエンドアプリ用）の作成
+		const userPoolClient = new UserPoolClient(this, "UserPoolClient", {
+			userPool,
+			userPoolClientName: "appsync-sample-web-client",
+			// 認証フロー設定
+			authFlows: {
+				userPassword: true, // ユーザー名/パスワード認証
+				userSrp: true, // Secure Remote Password (SRP)
+			},
+			// OAuth設定（将来的なソーシャルログイン対応用）
+			oAuth: {
+				flows: {
+					authorizationCodeGrant: true,
+				},
+				scopes: [
+					{ scopeName: "email" },
+					{ scopeName: "openid" },
+					{ scopeName: "profile" },
+				],
+			},
+			// リフレッシュトークンの有効期限（30日）
+			refreshTokenValidity: cdk.Duration.days(30),
+			// アクセストークンの有効期限（1時間）
+			accessTokenValidity: cdk.Duration.hours(1),
+			// IDトークンの有効期限（1時間）
+			idTokenValidity: cdk.Duration.hours(1),
+		});
+
+		// ==================================================
 		// AppSync API (GraphQL API) の作成
 		// ==================================================
 
@@ -80,10 +153,18 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 			),
 			// 認証設定
 			authorizationConfig: {
+				// デフォルト認証はCognito User Poolに変更
 				defaultAuthorization: {
-					authorizationType: AuthorizationType.API_KEY,
+					authorizationType: AuthorizationType.USER_POOL,
+					userPoolConfig: {
+						userPool,
+					},
 				},
+				// 追加の認証モード（後方互換性のため維持）
 				additionalAuthorizationModes: [
+					{
+						authorizationType: AuthorizationType.API_KEY,
+					},
 					{
 						authorizationType: AuthorizationType.IAM,
 					},
@@ -199,6 +280,9 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 				NEXT_PUBLIC_APPSYNC_ENDPOINT: api.graphqlUrl,
 				NEXT_PUBLIC_APPSYNC_API_KEY: api.apiKey || "",
 				NEXT_PUBLIC_AWS_REGION: this.region,
+				// Cognito認証情報
+				NEXT_PUBLIC_USER_POOL_ID: userPool.userPoolId,
+				NEXT_PUBLIC_USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
 			},
 			// build設定
 			buildSpec: cdk.aws_codebuild.BuildSpec.fromObjectToYaml({
@@ -289,6 +373,21 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 		new cdk.CfnOutput(this, "AmplifyAppURL", {
 			value: `https://main.${amplifyApp.defaultDomain}`,
 			description: "Amplify App URL",
+		});
+
+		new cdk.CfnOutput(this, "UserPoolId", {
+			value: userPool.userPoolId,
+			description: "Cognito User Pool ID",
+		});
+
+		new cdk.CfnOutput(this, "UserPoolClientId", {
+			value: userPoolClient.userPoolClientId,
+			description: "Cognito User Pool Client ID",
+		});
+
+		new cdk.CfnOutput(this, "UserPoolArn", {
+			value: userPool.userPoolArn,
+			description: "Cognito User Pool ARN",
 		});
 	}
 }
