@@ -14,6 +14,13 @@ It demonstrates an AppSync API backed by DynamoDB tables with a modern, stylish 
 ## Key Features
 
 ### Backend
+- **Authentication**: AWS Cognito User Pool for user authentication
+  - Email-based sign-up/sign-in
+  - Self-registration enabled with email verification
+  - Password policy: min 8 chars, uppercase, lowercase, numbers required
+  - Token validity: Access/ID (1h), Refresh (30 days)
+- **Authorization**: AppSync with Cognito User Pool authentication (default)
+  - Additional auth modes: API_KEY, IAM (for backward compatibility)
 - One-to-many relationship between "cars" and "defects".
 - Public RDW data source.
 - **GraphQL Queries**:
@@ -22,15 +29,24 @@ It demonstrates an AppSync API backed by DynamoDB tables with a modern, stylish 
 - **Pagination**: Uses DynamoDB Scan with nextToken for efficient data retrieval
 
 ### Frontend
+- **Authentication**:
+  - Cognito-powered user authentication with Amplify UI
+  - Sign-up, sign-in, password reset, email verification
+  - Japanese-localized auth forms
+  - Protected routes with authentication guards
+  - Global auth state management via React Context
 - **Modern UI Design**: 
   - Glass morphism effects with backdrop blur
   - Animated gradients and floating elements
   - Dark theme with blue/purple accents
   - Smooth transitions and hover effects
 - **Pages**:
-  - `/`: Home page with car search by license plate
-  - `/cars`: All cars list with pagination
+  - `/auth`: Authentication page (sign-up/sign-in)
+  - `/`: Home page with car search by license plate (protected)
+  - `/cars`: All cars list with pagination (protected)
 - **Components**:
+  - `Header`: Navigation with user info display and logout
+  - `ProtectedRoute`: Route guard for authenticated access
   - `CarSearch`: License plate search with detailed car info display
   - `CarList`: Grid view of all cars with load more functionality
 - **Icons**: lucide-react for modern icon system
@@ -38,6 +54,9 @@ It demonstrates an AppSync API backed by DynamoDB tables with a modern, stylish 
 
 ## Architecture
 - **Infrastructure**: Defined in `pkgs/cdk/lib/cdk-appsync-demo-stack.ts`.
+  - Cognito User Pool & User Pool Client
+  - AppSync API with Cognito authentication
+  - DynamoDB tables for data storage
 - **Schema**: GraphQL schema in `pkgs/cdk/graphql/schema.graphql`.
 - **Resolvers**: 
   - `getCar.js`: Individual car retrieval (GetItem operation)
@@ -45,4 +64,8 @@ It demonstrates an AppSync API backed by DynamoDB tables with a modern, stylish 
   - `getDefects.js`: Defects for a specific car
   - `pipeline.js`: Pipeline resolver coordinator
 - **Web App**: Located in `pkgs/frontend`.
+  - `context/`: Authentication context (AuthContext)
+  - `lib/`: Amplify configuration, GraphQL client
+  - `app/`: Pages and components
+  - `middleware.ts`: Route protection middleware
 - **Styling**: Custom Tailwind CSS v4 configuration with animations in `globals.css`
