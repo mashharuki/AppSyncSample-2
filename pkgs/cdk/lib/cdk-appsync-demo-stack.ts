@@ -307,7 +307,7 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 								},
 							},
 							artifacts: {
-								baseDirectory: ".next",
+								baseDirectory: "out",
 								files: ["**/*"],
 							},
 							cache: {
