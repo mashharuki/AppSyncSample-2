@@ -1,6 +1,7 @@
 "use client";
 
 import { getCurrentUser, signOut } from "aws-amplify/auth";
+import { Hub } from "aws-amplify/utils";
 import {
 	type ReactNode,
 	createContext,
@@ -117,6 +118,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	// コンポーネントマウント時にユーザー情報を取得
 	useEffect(() => {
 		fetchUser();
+
+		// Amplify Hub で認証イベントをリッスン
+		const hubListener = Hub.listen("auth", ({ payload }) => {
+			const { event } = payload;
+			
+			// 認証状態が変更されたらユーザー情報を再取得
+			if (
+				event === "signInWithRedirect" ||
+				event === "tokenRefresh" ||
+				event === "signedOut"
+			) {
+				fetchUser();
+			}
+		});
+
+		return () => hubListener();
 	}, []);
 
 	const value: AuthContextType = {

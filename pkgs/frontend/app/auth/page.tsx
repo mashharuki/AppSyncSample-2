@@ -1,34 +1,17 @@
 "use client";
 
+import { useAuth } from "@/context/auth-context";
 import { amplifyConfig } from "@/lib/amplify-config";
 import { Authenticator } from "@aws-amplify/ui-react";
 import "@aws-amplify/ui-react/styles.css";
 import { Amplify } from "aws-amplify";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 
 // Amplifyを初期化 (クライアントサイド)
 if (typeof window !== "undefined") {
   Amplify.configure(amplifyConfig, { ssr: true });
-}
-
-/**
- * リダイレクトハンドラーコンポーネント
- * ログイン成功後のリダイレクトを処理し、無限レンダリングを防ぐ
- */
-function RedirectHandler({ user, router }: { user: any; router: any }) {
-	useEffect(() => {
-		if (user) {
-			router.push("/");
-		}
-	}, [user, router]);
-
-	return (
-		<div className="h-8 flex items-center justify-center">
-			<div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-		</div>
-	);
 }
 
 /**
@@ -40,6 +23,34 @@ function RedirectHandler({ user, router }: { user: any; router: any }) {
  */
 export default function AuthPage() {
 	const router = useRouter();
+	const { user, loading, refreshUser } = useAuth();
+
+	// 認証済みユーザーを自動的にホームページにリダイレクト
+	// AuthContext が Hub イベントを監視しているため、
+	// 認証状態が変更されると自動的に user が更新される
+	useEffect(() => {
+		if (!loading && user) {
+			router.replace("/");
+		}
+	}, [user, loading, router]);
+
+	// ローディング中の表示
+	if (loading) {
+		return (
+			<div className="min-h-screen flex items-center justify-center bg-[#020617]">
+				<div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+			</div>
+		);
+	}
+
+	// 認証済みの場合は何も表示しない（リダイレクト中）
+	if (user) {
+		return (
+			<div className="min-h-screen flex items-center justify-center bg-[#020617]">
+				<div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+			</div>
+		);
+	}
 
 	return (
 		<div className="min-h-screen relative flex items-center justify-center p-4">
@@ -115,9 +126,27 @@ export default function AuthPage() {
 								},
 							}}
 						>
-							{({ signOut, user }) => (
-								<RedirectHandler user={user} router={router} />
-							)}
+							{({ user: authUser }) => {
+								// 認証成功時に AuthContext を更新する補助コンポーネント
+								const AuthSync = () => {
+									const hasSynced = useRef(false);
+
+									useEffect(() => {
+										if (authUser && !hasSynced.current) {
+											hasSynced.current = true;
+											refreshUser();
+										}
+									}, [authUser]);
+
+									return (
+										<div className="h-8 flex items-center justify-center">
+											<div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+										</div>
+									);
+								};
+
+								return <AuthSync />;
+							}}
 						</Authenticator>
 					</div>
 				</div>
