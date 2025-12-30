@@ -57,12 +57,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			// Amplifyが設定されているかチェック
 			// 環境変数が設定されていない場合は早期リターン
 			if (typeof window !== "undefined") {
-				const hasConfig = 
-					process.env.NEXT_PUBLIC_USER_POOL_ID &&
-					process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID;
+				const hasUserPoolId = process.env.NEXT_PUBLIC_USER_POOL_ID;
+				const hasUserPoolClientId = process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID;
 				
-				if (!hasConfig) {
+				if (!hasUserPoolId || !hasUserPoolClientId) {
 					console.warn("[AuthContext] Amplify not configured. Skipping user fetch.");
+					console.warn("Missing:", {
+						userPoolId: !hasUserPoolId,
+						userPoolClientId: !hasUserPoolClientId,
+					});
 					setUser(null);
 					setLoading(false);
 					return;

@@ -1,5 +1,48 @@
 import type { ResourcesConfig } from "aws-amplify";
 
+/**
+ * 必須環境変数のバリデーション
+ */
+function validateEnvironmentVariables(): {
+  isValid: boolean;
+  missingVars: string[];
+} {
+  const requiredVars = [
+    "NEXT_PUBLIC_USER_POOL_ID",
+    "NEXT_PUBLIC_USER_POOL_CLIENT_ID",
+    "NEXT_PUBLIC_APPSYNC_ENDPOINT",
+  ];
+
+  const missingVars = requiredVars.filter(
+    (varName) => !process.env[varName]
+  );
+
+  return {
+    isValid: missingVars.length === 0,
+    missingVars,
+  };
+}
+
+// 環境変数のバリデーション
+const validation = validateEnvironmentVariables();
+
+// クライアント側でのみ警告を表示
+if (typeof window !== "undefined" && !validation.isValid) {
+  console.error(
+    "[Amplify Config Error]: 必須の環境変数が設定されていません:",
+    validation.missingVars
+  );
+  console.error(
+    "認証とAPIコールが失敗する可能性があります。.env.localファイルを確認してください。"
+  );
+}
+
+/**
+ * Amplify設定
+ * 
+ * 環境変数が正しく設定されていない場合、空文字列をデフォルト値として使用します。
+ * これにより、開発環境で.env.localが未設定の場合でもビルドエラーを回避できます。
+ */
 export const amplifyConfig: ResourcesConfig = {
   Auth: {
     Cognito: {
@@ -34,24 +77,9 @@ export const amplifyConfig: ResourcesConfig = {
   },
 };
 
-// 必須の環境変数が設定されているかチェック
-if (typeof window !== "undefined") {
-  // Next.jsはビルド時に環境変数を静的に置換するため、直接アクセスする必要がある
-  if (!process.env.NEXT_PUBLIC_USER_POOL_ID) {
-    console.warn(
-      "[Amplify Config Warning]: NEXT_PUBLIC_USER_POOL_ID is not defined. Authentication or API calls may fail."
-    );
-  }
-  
-  if (!process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID) {
-    console.warn(
-      "[Amplify Config Warning]: NEXT_PUBLIC_USER_POOL_CLIENT_ID is not defined. Authentication or API calls may fail."
-    );
-  }
-  
-  if (!process.env.NEXT_PUBLIC_APPSYNC_ENDPOINT) {
-    console.warn(
-      "[Amplify Config Warning]: NEXT_PUBLIC_APPSYNC_ENDPOINT is not defined. Authentication or API calls may fail."
-    );
-  }
+/**
+ * 環境変数が正しく設定されているかチェック
+ */
+export function isAmplifyConfigured(): boolean {
+  return validation.isValid;
 }

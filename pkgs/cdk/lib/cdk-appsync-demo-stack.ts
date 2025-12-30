@@ -307,7 +307,7 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 								},
 							},
 							artifacts: {
-								baseDirectory: "out",
+								baseDirectory: ".next",
 								files: ["**/*"],
 							},
 							cache: {
@@ -321,14 +321,8 @@ export class CdkAppsyncDemoStack extends cdk.Stack {
 					},
 				],
 			}),
-			// SPAルーティングのためのリダイレクトルールを追加
-			customRules: [
-				{
-					source: "/<*>",
-					target: "/index.html",
-					status: amplify.RedirectStatus.NOT_FOUND_REWRITE,
-				},
-			],
+			// Next.jsのSSRモードではカスタムルールは不要
+			// Amplify HostingがNext.jsを自動検出して適切に処理する
 		});
 
 		// mainブランチを本番環境として設定
